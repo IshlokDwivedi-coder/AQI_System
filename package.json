@@ -1,0 +1,21 @@
+{
+  "name": "aerogemma-touch-grass-aqi",
+  "version": "1.0.0",
+  "description": "An AI-powered Air Quality Index & 'Touch Grass' outdoor advisor powered by Google's Gemma model for Hacktoberfest 2026.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [
+    "gemma",
+    "air-quality",
+    "aqi",
+    "open-source-ai",
+    "hacktoberfest",
+    "touch-grass",
+    "devchallenge"
+  ],
+  "author": "Ishlok Dwivedi",
+  "license": "MIT"
+}

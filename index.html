@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AeroGemma — Touch Grass with AI-Powered Air Quality Index</title>
+  <meta name="description" content="A real-time Air Quality Index (AQI) dashboard powered by Google's open-weight Gemma model to help you safely get outdoors and touch grass. Built for Hacktoberfest 2026.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌿</text></svg>">
+</head>
+<body>
+  <!-- Ambient background glow elements -->
+  <div class="ambient-glow glow-1" id="glow1"></div>
+  <div class="ambient-glow glow-2" id="glow2"></div>
+
+  <!-- Navigation Bar -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="brand">
+        <div class="brand-icon">🌿</div>
+        <div class="brand-text">
+          <span class="brand-name">AeroGemma</span>
+          <span class="brand-tag">Touch Grass Advisor</span>
+        </div>
+      </div>
+      <div class="header-actions">
+        <div class="gemma-badge" id="gemmaModelBadge">
+          <span class="pulse-dot"></span>
+          <span class="badge-text">Gemma 4 (Open-Weight AI)</span>
+        </div>
+        <button class="icon-btn" id="openSettingsBtn" title="Gemma & App Settings" aria-label="Open Settings">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <!-- Hero / Search Section -->
+    <section class="search-section" aria-label="Search Location">
+      <h1 class="hero-title">Know when to <span class="gradient-text">Touch Grass</span>.</h1>
+      <p class="hero-subtitle">Real-time global Air Quality Index paired with Google's open-weight Gemma model to plan your outdoor adventures safely.</p>
+      
+      <div class="search-container">
+        <form class="search-form" id="searchForm" onsubmit="event.preventDefault();">
+          <div class="search-input-wrapper">
+            <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="text" id="cityInput" placeholder="Enter any city (e.g. San Francisco, New Delhi, London, Tokyo)..." autocomplete="off" aria-label="City Name">
+            <button type="button" class="locate-btn" id="locateBtn" title="Use current GPS location" aria-label="Use Current GPS">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
+              </svg>
+              <span>Current GPS</span>
+            </button>
+          </div>
+          <button type="submit" class="search-submit-btn" id="searchSubmitBtn">Check AQI</button>
+        </form>
+
+        <!-- Quick selection pills -->
+        <div class="popular-cities" id="popularCities">
+          <span class="pills-label">Quick picks:</span>
+          <button class="city-pill active" data-city="San Francisco">San Francisco</button>
+          <button class="city-pill" data-city="London">London</button>
+          <button class="city-pill" data-city="New Delhi">New Delhi</button>
+          <button class="city-pill" data-city="Tokyo">Tokyo</button>
+          <button class="city-pill" data-city="Paris">Paris</button>
+          <button class="city-pill" data-city="Sydney">Sydney</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Loading State -->
+    <div class="loading-state hidden" id="loadingState">
+      <div class="spinner"></div>
+      <p id="loadingMessage">Fetching live atmospheric data & consulting Gemma...</p>
+    </div>
+
+    <!-- Error State -->
+    <div class="error-banner hidden" id="errorBanner">
+      <span class="error-icon">⚠️</span>
+      <span id="errorMessage">Unable to fetch AQI data. Please try again.</span>
+      <button class="close-err-btn" id="closeErrorBtn">&times;</button>
+    </div>
+
+    <!-- Main Results Dashboard -->
+    <div class="dashboard-grid" id="dashboardContent">
+      <!-- Left Column: Touch Grass Verdict Card -->
+      <section class="card verdict-card" id="verdictCard" aria-label="Air Quality Verdict">
+        <div class="card-header">
+          <div class="location-info">
+            <div class="location-name-row">
+              <span class="location-pin">📍</span>
+              <h2 class="location-name" id="locationTitle">San Francisco, United States</h2>
+            </div>
+            <span class="timestamp" id="lastUpdatedTime">Updated just now</span>
+          </div>
+          <div class="category-badge" id="aqiCategoryBadge">Good Air</div>
+        </div>
+
+        <div class="verdict-body">
+          <!-- AQI Gauge Visualizer -->
+          <div class="gauge-wrapper">
+            <div class="aqi-circle" id="aqiCircle">
+              <svg class="progress-ring" width="220" height="220">
+                <circle class="progress-ring-bg" stroke="rgba(255,255,255,0.08)" stroke-width="14" fill="transparent" r="90" cx="110" cy="110"/>
+                <circle class="progress-ring-fill" id="progressRingFill" stroke="currentColor" stroke-width="14" stroke-linecap="round" fill="transparent" r="90" cx="110" cy="110"/>
+              </svg>
+              <div class="aqi-value-box">
+                <span class="aqi-number" id="aqiNumber">32</span>
+                <span class="aqi-label">US AQI</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Touch Grass Banner -->
+          <div class="grass-decision-box" id="grassDecisionBox">
+            <div class="decision-icon" id="decisionIcon">🌿</div>
+            <div class="decision-text">
+              <h3 class="decision-heading" id="decisionHeading">YES! Safe to Touch Grass</h3>
+              <p class="decision-description" id="decisionDescription">
+                The air is crisp, pure, and clean. Step away from your computer screen and enjoy the great outdoors!
+              </p>
+            </div>
+          </div>
+
+          <!-- Weather & Atmospheric Micro-Metrics -->
+          <div class="micro-metrics-grid">
+            <div class="micro-metric-item">
+              <span class="metric-icon">🌡️</span>
+              <div class="metric-details">
+                <span class="metric-title">Temperature</span>
+                <span class="metric-val" id="tempVal">18°C</span>
+              </div>
+            </div>
+            <div class="micro-metric-item">
+              <span class="metric-icon">💧</span>
+              <div class="metric-details">
+                <span class="metric-title">Humidity</span>
+                <span class="metric-val" id="humidityVal">62%</span>
+              </div>
+            </div>
+            <div class="micro-metric-item">
+              <span class="metric-icon">💨</span>
+              <div class="metric-details">
+                <span class="metric-title">Wind Speed</span>
+                <span class="metric-val" id="windVal">14 km/h</span>
+              </div>
+            </div>
+            <div class="micro-metric-item">
+              <span class="metric-icon">☀️</span>
+              <div class="metric-details">
+                <span class="metric-title">UV Index</span>
+                <span class="metric-val" id="uvVal">3 (Moderate)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right Column: Gemma Outdoor AI Insights & Activity Matrix -->
+      <section class="card gemma-card" id="gemmaCard" aria-label="Gemma Outdoor Intelligence">
+        <div class="card-header">
+          <div class="gemma-title-wrap">
+            <div class="ai-sparkle">✨</div>
+            <div>
+              <h2 class="card-title">Gemma Outdoor Advisor</h2>
+              <span class="card-subtitle">Open-weight atmospheric intelligence by Google Gemma</span>
+            </div>
+          </div>
+          <button class="refresh-ai-btn" id="regenerateAiBtn" title="Regenerate recommendation with Gemma">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="23 4 23 10 17 10"></polyline>
+              <polyline points="1 20 1 14 7 14"></polyline>
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+            </svg>
+            <span>Re-analyze</span>
+          </button>
+        </div>
+
+        <div class="gemma-body">
+          <!-- Activity Recommendation Cards -->
+          <div class="activities-grid">
+            <div class="activity-card" id="actRunning">
+              <div class="act-top">
+                <span class="act-icon">🏃‍♂️</span>
+                <span class="act-status-badge status-good" id="badgeRunning">Ideal</span>
+              </div>
+              <h3 class="act-name">Running & Cardio</h3>
+              <p class="act-desc" id="descRunning">Optimal lung oxygenation. Hit the trails or running track.</p>
+            </div>
+
+            <div class="activity-card" id="actGardening">
+              <div class="act-top">
+                <span class="act-icon">🌱</span>
+                <span class="act-status-badge status-good" id="badgeGardening">Recommended</span>
+              </div>
+              <h3 class="act-name">Gardening & Plants</h3>
+              <p class="act-desc" id="descGardening">Spend unlimited time tending to garden soil and outdoor flora.</p>
+            </div>
+
+            <div class="activity-card" id="actPets">
+              <div class="act-top">
+                <span class="act-icon">🐕</span>
+                <span class="act-status-badge status-good" id="badgePets">Safe</span>
+              </div>
+              <h3 class="act-name">Dog Walking & Hiking</h3>
+              <p class="act-desc" id="descPets">Great conditions for extended trail walks with pets.</p>
+            </div>
+
+            <div class="activity-card" id="actKids">
+              <div class="act-top">
+                <span class="act-icon">🪁</span>
+                <span class="act-status-badge status-good" id="badgeKids">Safe</span>
+              </div>
+              <h3 class="act-name">Kids & Playgrounds</h3>
+              <p class="act-desc" id="descKids">Zero respiratory hazard. Safe for long outdoor playground sessions.</p>
+            </div>
+          </div>
+
+          <!-- Gemma Natural Language Narrative Output -->
+          <div class="ai-narrative-container">
+            <div class="ai-narrative-header">
+              <span class="ai-chip">Model: gemma-4-26b-a4b-it</span>
+              <span class="ai-latency" id="aiLatencyTag">⚡ Generated in 0.8s</span>
+            </div>
+            <div class="ai-narrative-text" id="aiNarrativeText">
+              Loading Gemma's outdoor activity recommendation...
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Full Width: Detailed Pollutant Breakdown -->
+      <section class="card pollutants-card" id="pollutantsCard" aria-label="Atmospheric Pollutants">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">Detailed Atmospheric Pollutants</h2>
+            <span class="card-subtitle">Real-time concentration measured in μg/m³ & compared to WHO guidelines</span>
+          </div>
+          <span class="source-tag">Source: Open-Meteo Global Station Mesh</span>
+        </div>
+
+        <div class="pollutants-grid">
+          <!-- PM2.5 -->
+          <div class="pollutant-box" id="boxPm25">
+            <div class="pollutant-head">
+              <span class="p-symbol">PM<sub>2.5</sub></span>
+              <span class="p-rating rating-good" id="ratePm25">Good</span>
+            </div>
+            <div class="p-value-row">
+              <span class="p-value" id="valPm25">6.4</span>
+              <span class="p-unit">μg/m³</span>
+            </div>
+            <div class="p-bar-bg"><div class="p-bar-fill" id="barPm25" style="width: 25%;"></div></div>
+            <span class="p-info">Fine inhalable particles (&le; 2.5 μm). WHO 24h limit: 15 μg/m³</span>
+          </div>
+
+          <!-- PM10 -->
+          <div class="pollutant-box" id="boxPm10">
+            <div class="pollutant-head">
+              <span class="p-symbol">PM<sub>10</sub></span>
+              <span class="p-rating rating-good" id="ratePm10">Good</span>
+            </div>
+            <div class="p-value-row">
+              <span class="p-value" id="valPm10">12.1</span>
+              <span class="p-unit">μg/m³</span>
+            </div>
+            <div class="p-bar-bg"><div class="p-bar-fill" id="barPm10" style="width: 27%;"></div></div>
+            <span class="p-info">Inhalable coarse dust & pollen (&le; 10 μm). WHO limit: 45 μg/m³</span>
+          </div>
+
+          <!-- O3 (Ozone) -->
+          <div class="pollutant-box" id="boxOzone">
+            <div class="pollutant-head">
+              <span class="p-symbol">O<sub>3</sub> (Ozone)</span>
+              <span class="p-rating rating-good" id="rateOzone">Good</span>
+            </div>
+            <div class="p-value-row">
+              <span class="p-value" id="valOzone">42.8</span>
+              <span class="p-unit">μg/m³</span>
+            </div>
+            <div class="p-bar-bg"><div class="p-bar-fill" id="barOzone" style="width: 42%;"></div></div>
+            <span class="p-info">Ground-level smog triggered by sunlight. WHO limit: 100 μg/m³</span>
+          </div>
+
+          <!-- NO2 -->
+          <div class="pollutant-box" id="boxNo2">
+            <div class="pollutant-head">
+              <span class="p-symbol">NO<sub>2</sub></span>
+              <span class="p-rating rating-good" id="rateNo2">Good</span>
+            </div>
+            <div class="p-value-row">
+              <span class="p-value" id="valNo2">9.5</span>
+              <span class="p-unit">μg/m³</span>
+            </div>
+            <div class="p-bar-bg"><div class="p-bar-fill" id="barNo2" style="width: 38%;"></div></div>
+            <span class="p-info">Nitrogen dioxide from vehicles and combustion. WHO limit: 25 μg/m³</span>
+          </div>
+
+          <!-- SO2 -->
+          <div class="pollutant-box" id="boxSo2">
+            <div class="pollutant-head">
+              <span class="p-symbol">SO<sub>2</sub></span>
+              <span class="p-rating rating-good" id="rateSo2">Good</span>
+            </div>
+            <div class="p-value-row">
+              <span class="p-value" id="valSo2">3.2</span>
+              <span class="p-unit">μg/m³</span>
+            </div>
+            <div class="p-bar-bg"><div class="p-bar-fill" id="barSo2" style="width: 16%;"></div></div>
+            <span class="p-info">Sulphur dioxide from power plants & fuels. WHO limit: 40 μg/m³</span>
+          </div>
+
+          <!-- CO -->
+          <div class="pollutant-box" id="boxCo">
+            <div class="pollutant-head">
+              <span class="p-symbol">CO (Carbon Monoxide)</span>
+              <span class="p-rating rating-good" id="rateCo">Good</span>
+            </div>
+            <div class="p-value-row">
+              <span class="p-value" id="valCo">180</span>
+              <span class="p-unit">μg/m³</span>
+            </div>
+            <div class="p-bar-bg"><div class="p-bar-fill" id="barCo" style="width: 20%;"></div></div>
+            <span class="p-info">Combustion byproduct. WHO 24h safety limit: 4000 μg/m³</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Why Open Innovation Matters Card (Hacktoberfest Theme Section) -->
+      <section class="card open-source-card" id="openSourceCard" aria-label="Why Open Innovation Matters">
+        <div class="open-source-content">
+          <div class="open-source-badge">🌟 Hacktoberfest 2026: Open-Source AI</div>
+          <h2 class="open-source-heading">Why Open Innovation & Gemma Matter for Outdoor Health</h2>
+          <p class="open-source-body">
+            Closed AI APIs require continuous cell signal, upload your real-time coordinates to proprietary servers, and cost money per query. 
+            By building around <strong>Google's open-weight Gemma</strong>, AeroGemma can:
+          </p>
+          <div class="benefits-row">
+            <div class="benefit-item">
+              <div class="benefit-icon">📶</div>
+              <h3>Trail & Backcountry Ready</h3>
+              <p>Gemma's open weights can be run offline on a laptop, Raspberry Pi, or phone without internet when you are deep in the woods or mountains.</p>
+            </div>
+            <div class="benefit-item">
+              <div class="benefit-icon">🔒</div>
+              <h3>Location & Health Privacy</h3>
+              <p>Your GPS coordinates and personal respiratory sensitivities stay completely on your device, never tracked or monetized by third parties.</p>
+            </div>
+            <div class="benefit-item">
+              <div class="benefit-icon">⚡</div>
+              <h3>Zero API Subscription Costs</h3>
+              <p>Open-weight models give developers, schools, and hikers perpetual access with zero paywalls, rate caps, or API deprecation fears.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- Settings Modal -->
+  <div class="modal-overlay hidden" id="settingsModal" aria-modal="true" role="dialog">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <span class="modal-icon">⚙️</span>
+          <h2>AeroGemma Settings</h2>
+        </div>
+        <button class="modal-close-btn" id="closeSettingsBtn" aria-label="Close Settings">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="apiKeyInput">Google AI Studio API Key (Gemma)</label>
+          <input type="password" id="apiKeyInput" placeholder="Enter your Google AI Studio API key..." spellcheck="false">
+          <span class="form-hint">Stored securely in your local browser storage. Powers Gemma models directly.</span>
+        </div>
+
+        <div class="form-group">
+          <label for="modelSelect">Gemma Model Version</label>
+          <select id="modelSelect">
+            <option value="gemma-4-26b-a4b-it">gemma-4-26b-a4b-it (Recommended — High Quality)</option>
+            <option value="gemma-4-31b-it">gemma-4-31b-it</option>
+            <option value="offline-rule-engine">Offline Edge Engine (Zero network required)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="aqiStandardSelect">AQI Standard</label>
+          <select id="aqiStandardSelect">
+            <option value="us">United States EPA Standard (0-500 scale)</option>
+            <option value="european">European EAQI Standard (1-6 scale)</option>
+          </select>
+        </div>
+
+        <div class="modal-status-box" id="testApiResult">
+          <span>Connection Status: Ready</span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="testConnectionBtn">Test Gemma Key</button>
+        <button class="btn btn-primary" id="saveSettingsBtn">Save & Apply</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="app-footer">
+    <div class="footer-container">
+      <div class="footer-left">
+        <span class="footer-brand">🌿 AeroGemma</span>
+        <span class="footer-copy">Built by <a href="https://github.com/IshlokDwivedi-coder" target="_blank" rel="noopener">Ishlok Dwivedi</a> for Hacktoberfest 2026.</span>
+      </div>
+      <div class="footer-right">
+        <a href="https://github.com/IshlokDwivedi-coder/AQI_System" class="footer-link" target="_blank" rel="noopener">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
+          </svg>
+          <span>GitHub Code</span>
+        </a>
+        <a href="https://dev.to/challenges/hacktoberfest-week1-2026-10-05" class="footer-link" target="_blank" rel="noopener">
+          <span>DEV Challenge #hf26challenge</span>
+        </a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
